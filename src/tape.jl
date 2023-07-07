@@ -204,11 +204,20 @@ function mkcall(fn, args...; val=UncalculatedValue(), line=nothing, kwargs=(;), 
     if val === UncalculatedValue() && calculable
         fn_ = fn isa V ? fn.op.val : fn
         args_ = Any[v isa V ? v.op.val : v for v in args]
+        args_ = map(fix_boundscheck, args_)
         val_ = fn_(args_...)
     else
         val_ = val
     end
     return Call(0, val_, fn, [args...]; line=line)
+end
+
+fix_boundscheck(x) = x
+function fix_boundscheck(x::Expr)
+    if Base.isexpr(x, :boundscheck)
+        return :true
+    end
+    throw(error("Expected boundscheck, got $x"))
 end
 
 
@@ -550,6 +559,7 @@ exec!(::Tape, ::Constant) = ()
 function exec!(tape::Tape, op::Call)
     fn = op.fn isa V ? tape[op.fn].val : op.fn
     arg_vals = map_vars(v -> tape[v].val, op.args)
+    arg_vals = map(v -> v isa Expr ? true : v, arg_vals)
     op.val = fn(arg_vals...)
 end
 

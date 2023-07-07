@@ -2,15 +2,22 @@ macro __splatnew__(T, args)
     esc(Expr(:splatnew, T, args))
 end
 
-"""
-    __new__(T, args...)
-User-level version of the `new()` pseudofunction.
-Can be used to construct most Julia types, including structs
-without default constructors, closures, etc.
-"""
-@inline function __new__(T, args...)
-    @__splatnew__(T, args)
+macro __new__(T, arg)
+    esc(Expr(:new, T, arg))
 end
+
+# """
+#     __new__(T, args...)
+# User-level version of the `new()` pseudofunction.
+# Can be used to construct most Julia types, including structs
+# without default constructors, closures, etc.
+# """
+# @inline function __new__(T, args...)
+#     @__splatnew__(T, args)
+# end
+
+@inline @generated __new__(T, x...) = Expr(:new, :T, map(n -> :(x[$n]), 1:length(x))...)
+# @inline @generated __splatnew__(T, x...) = Expr(:splatnew, :T, :x)
 
 function __splatnew__(T, t)
     return __new__(T, t...)

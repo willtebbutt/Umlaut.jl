@@ -291,6 +291,8 @@ records it to the tape or recurses into it.
 """
 function trace_call!(t::Tracer{C}, vs...) where C
     fargs = var_values(vs)
+    # @show fargs
+    # @show isprimitive(t.tape.c, fargs...) && !is_ho_tracable(t.tape.c, fargs...)
     if isprimitive(t.tape.c, fargs...) && !is_ho_tracable(t.tape.c, fargs...)
         return record_primitive!(t.tape, vs...)
     else
@@ -476,10 +478,11 @@ function trace!(t::Tracer, v_fargs)
     # note: we need to extract IR before vararg grouping, which may change
     # v_fargs, thus invalidating method search
     ir = getcode(code_signature(t.tape.c, v_fargs)...)
+    sparams = get_static_params(t, v_fargs)
     v_fargs = group_varargs!(t, v_fargs)
     frame = Frame(t.tape, ir, v_fargs...)
     push!(t.stack, frame)
-    sparams = get_static_params(t, v_fargs)
+
     bi = 1
     prev_bi = 0
     cf = nothing
